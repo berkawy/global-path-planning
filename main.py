@@ -7,19 +7,21 @@ import time
 
 application = Nominatim(user_agent="tutorial")
 
-# getting current location coordinates
+# getting current location coordinates.
 x = input("Enter pickup location:")
 currentLocation = application.geocode(x).raw
 pprint(currentLocation)
 
-# getting destination coordinates
+# getting destination coordinates.
 y = input("Enter destination location: ")
 destinationLocation = application.geocode(y).raw
 pprint(destinationLocation)
 
 # created Cairo, Egypt's graph using ox.graph_from_place
 # then saved it using ox.save_graphml to data folder and then loading it to reduce run time
-# you will have to do it yourself since it cannot be pushed as is its 100+ MB
+# you will have to do it yourself since it cannot be pushed as is its 100+ MB.
+# G = ox.graph_from_place('Cairo, Egypt', network_type='drive')
+# ox.save_graphml(G, './data/graph.graphml')
 G = ox.load_graphml('./data/graph.graphml')
 
 # saving start and end coordinates to variables and getting nearest node to them
@@ -28,19 +30,34 @@ end = (float(destinationLocation['lat']), float(destinationLocation['lon']))
 start_node = ox.get_nearest_node(G, start)
 end_node = ox.get_nearest_node(G, end)
 
-# list that contains all routes
+# list that contains all routes.
 route_list = []
 
-# route based on shortest distance from start to end
+# route based on shortest distance from start to end, generated using dijkstra's algorithm.
 route1 = nx.shortest_path(G, start_node, end_node, weight='length')
 route_list.append(route1)
 
-# route based on shortest time travel from start to end
+# route based on shortest time travel from start to end, generated using dijkstra's algorithm.
 route2 = nx.shortest_path(G, start_node, end_node, weight='Travel time')
 route_list.append(route2)
 
+# route based on shortest time travel from start to end, generated using A* algorithm.
+route3 = nx.astar_path(G, start_node, end_node)
+route_list.append(route3)
 
-# getting all nodes on each generated route
+# route based on shortest time travel from start to end, generated using bellman-ford's algorithm.
+route4 = nx.shortest_path(G, start_node, end_node, method="bellman-ford")
+route_list.append(route4)
+
+
+# method that removes duplicate routes from the 4 generated routes if any.
+def checkRoutes(routes):
+    set_of_routes = set(tuple(o) for o in routes)
+    print([list(elem) for elem in list(set_of_routes)])
+    return [list(elem) for elem in list(set_of_routes)]
+
+
+# getting all nodes on each generated route.
 def allNodes(routes):
     nodes_proj, edges_proj = ox.graph_to_gdfs(G, nodes=True, edges=True)
     all_route_nodes = []
@@ -69,18 +86,20 @@ def listToDict(nodes):
 # for each 5 nodes away from each others in each route calls an api to calculate air pollution
 # and calls another api that calculates traffic at this node
 # and calculates noise based on Points of Interests near the node
+# then return the route with the least sum of the 3 things above.
 def calculate():
-    possible_routes = allNodes(route_list)
+    updated_route_list = checkRoutes(route_list)
+    possible_routes = allNodes(updated_route_list)
     allLists = dataframe_to_list(possible_routes)
     aqi = 0  # aqi returned from the air pollution api.
-    traffic_route = 0  # traffic returned at node on the route.
-    noise = 0  # noise calculated at a node.
     minimum = 0  # minimum sum of aqi, traffic_route, noise between different routes.
     best = 0  # best route number.
     all_routes_traffic = []  # list of traffic calculated in each route.
     all_routes_noise = []  # list of noise calculated on each route.
     all_routes_aqi = []  # list of aqi returned on each route.
     for value in allLists:
+        traffic_route = 0  # traffic returned at node on the route.
+        noise = 0  # noise calculated at a node.
         list_of_dict = listToDict(value)
         list_of_nodes = list_of_dict[::5]
         prev_after = []  # used in comparing nodes in traffic.
@@ -121,7 +140,7 @@ def calculate():
                 'x-rapidapi-key': "3511e239c9mshd7fcbcf5c64c90ap143252jsn6129f5800034",
                 'x-rapidapi-host': "air-quality.p.rapidapi.com"
             }
-            time.sleep(2)  # wait before calling the api again for 2 seconds so that it does not crash.
+            time.sleep(4)  # wait before calling the api again for 4 seconds so that it does not crash.
             airResponse = requests.request("GET", airUrl, headers=airHeaders, params=querystring)
             print(airResponse.json()['data'][0]['aqi'])
             aqi = airResponse.json()['data'][0]['aqi']
@@ -153,7 +172,7 @@ def calculate():
         i += 1
 
     print("Route " + str(best) + " is the best route")
-    return route_list[best]
+    return updated_route_list[best]
 
 
 calculate()

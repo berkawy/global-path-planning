@@ -49,6 +49,10 @@ route_list.append(route3)
 route4 = nx.shortest_path(G, start_node, end_node, method="bellman-ford")
 route_list.append(route4)
 
+# color_list = ['green', 'red', 'blue', 'yellow']
+
+# fig, ax = ox.plot_graph_routes(G, route_list, color_list, route_linewidths=10)
+# plt.show()
 
 # method that removes duplicate routes from the 4 generated routes if any.
 def checkRoutes(routes):
@@ -140,7 +144,7 @@ def calculate():
                 'x-rapidapi-key': "3511e239c9mshd7fcbcf5c64c90ap143252jsn6129f5800034",
                 'x-rapidapi-host': "air-quality.p.rapidapi.com"
             }
-            time.sleep(4)  # wait before calling the api again for 4 seconds so that it does not crash.
+            time.sleep(8)  # wait before calling the api again for 8 seconds so that it does not crash.
             airResponse = requests.request("GET", airUrl, headers=airHeaders, params=querystring)
             print(airResponse.json()['data'][0]['aqi'])
             aqi = airResponse.json()['data'][0]['aqi']
@@ -172,7 +176,8 @@ def calculate():
         i += 1
 
     print("Route " + str(best) + " is the best route")
-    return updated_route_list[best]
+    # fig, ax = ox.plot_graph_route(G, updated_route_list[best - 1], 'red', route_linewidth=4)
+    return updated_route_list[best - 1]
 
 
 calculate()
